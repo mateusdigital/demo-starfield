@@ -6,14 +6,14 @@
 //                   |___/\__\__,_|_| |_| |_|\__,_|\__|\__|                   //
 //                                                                            //
 //  File      : Starfield.js                                                  //
-//  Project   : stdmatt-demos                                                 //
-//  Date      : 17 Jul, 2019                                                  //
+//  Project   : starfield                                                     //
+//  Date      : Aug 25, 2019                                                  //
 //  License   : GPLv3                                                         //
 //  Author    : stdmatt <stdmatt@pixelwizards.io>                             //
-//  Copyright : stdmatt - 2019                                                //
+//  Copyright : stdmatt 2019, 2020                                            //
 //                                                                            //
 //  Description :                                                             //
-//   Just a simple starfield simulation...                                    //
+//                                                                            //
 //---------------------------------------------------------------------------~//
 
 //----------------------------------------------------------------------------//
@@ -24,12 +24,13 @@ const STAR_MIN_SIZE   =    0;
 const STAR_MAX_SIZE   =    4;
 const STAR_MIN_SPEED  =   50;
 const STAR_MAX_SPEED  =  900;
-const MAX_DISTANCE    =  200;
 const TRAIL_MIN_SIZE  =    0;
 const TRAIL_MAX_SIZE  =   30;
 const TRAIL_MIN_ALPHA =    0;
 const TRAIL_MAX_ALPHA =  0.5;
+
 let COLOR = chroma("white");
+
 
 //----------------------------------------------------------------------------//
 // Types                                                                      //
@@ -45,8 +46,8 @@ class Star
     {
         const GAP = 50;
         this.startPos = Vector_Create(
-            Math_RandomInt(Canvas_Edge_Left + GAP,  Canvas_Edge_Right  - GAP),
-            Math_RandomInt(Canvas_Edge_Top  + GAP,  Canvas_Edge_Bottom - GAP)
+            Random_Int(Canvas_Edge_Left + GAP,  Canvas_Edge_Right  - GAP),
+            Random_Int(Canvas_Edge_Top  + GAP,  Canvas_Edge_Bottom - GAP)
         );
         this.currPos = Vector_Copy(this.startPos);
 
@@ -67,7 +68,7 @@ class Star
 
         this.speed = Math_Map(
             this.distance,
-            0,              MAX_DISTANCE,
+            0,              max_distance,
             STAR_MIN_SPEED, STAR_MAX_SPEED
         ) * speed_modifier;
 
@@ -102,9 +103,6 @@ class Star
         }
     }
 
-
-
-
     draw()
     {
         Canvas_FillCircle(this.currPos.x, this.currPos.y, this.size);
@@ -113,9 +111,8 @@ class Star
         let v = Vector_Sub(this.currPos, Vector_Mul(this.direction, this.trailSize));
         Canvas_DrawLine(this.currPos.x, this.currPos.y, v.x, v.y);
     }
-
-
 }; // class Star
+
 
 //----------------------------------------------------------------------------//
 // Variables                                                                  //
@@ -123,7 +120,7 @@ class Star
 let stars               = [];
 let speed_modifier      = 0;
 let time_to_create_star = 0;
-
+let max_distance        = 0;
 
 //----------------------------------------------------------------------------//
 // Setup / Draw                                                               //
@@ -131,6 +128,48 @@ let time_to_create_star = 0;
 //------------------------------------------------------------------------------
 function Setup()
 {
+    Random_Seed(null);
+
+    //
+    // Configure the Canvas.
+    const parent        = document.getElementById("canvas_div");
+    const parent_width  = parent.clientWidth;
+    const parent_height = parent.clientHeight;
+
+    const max_side = Math_Max(parent_width, parent_height);
+    const min_side = Math_Min(parent_width, parent_height);
+
+    const ratio = min_side / max_side;
+
+    // Landscape
+    if(parent_width > parent_height) {
+        Canvas_CreateCanvas(800, 800 * ratio, parent);
+    }
+    // Portrait
+    else {
+        Canvas_CreateCanvas(800 * ratio, 800, parent);
+    }
+
+    Canvas.style.width  = "100%";
+    Canvas.style.height = "100%";
+
+    //
+    // Add the information.
+    const info = document.createElement("p");
+    info.innerHTML = String_Cat(
+        "Starfield",    "<br>",
+        "Mar 12, 2019", "<br>",
+        GetVersion(),   "<br>",
+        "Move your mouse closer to the edge to increase speed", "<br>",
+        "<a href=\"http://stdmatt.com/demos/starfield.html\">More info</a>"
+    );
+    parent.appendChild(info);
+
+    //
+    // Start th simulation...
+    max_distance = max_side;
+    Input_InstallBasicMouseHandler(Canvas);
+    Canvas_Start();
 }
 
 //------------------------------------------------------------------------------
@@ -139,14 +178,14 @@ function Draw(dt)
     Canvas_ClearWindow();
     Canvas_SetFillStyle("white");
 
+    const mouse_distance = Math_Distance(Mouse_X, Mouse_Y, 0, 0);
+    speed_modifier       = Math_Map(mouse_distance, 0, max_distance, 1.2, 2.5);
 
-    let mouse_distance = Math_Distance(Mouse_World_X, Mouse_World_Y, 0, 0);
-    speed_modifier     = Math_Map(mouse_distance, 0, MAX_DISTANCE, 1, 1.5);
 
     if(stars.length < STARS_COUNT) {
         time_to_create_star -= dt;
         if(time_to_create_star < 0) {
-            time_to_create_star = Math_Random(0, 0.1);
+            time_to_create_star = Random_Number(0, 0.1);
             stars.push(new Star());
         }
     }
@@ -161,10 +200,4 @@ function Draw(dt)
 //----------------------------------------------------------------------------//
 // Entry Point                                                                //
 //----------------------------------------------------------------------------//
-Canvas_Setup({
-    main_title        : "Starfield",
-    main_date         : "Jul 17, 2019",
-    main_version      : "v1.0.0",
-    main_instructions : "<br>Move your mouse closer to the edge to increase speed",
-    main_link: "<a href=\"http://stdmatt.com/demos/startfield.html\">More info</a>"
-});
+Setup();
