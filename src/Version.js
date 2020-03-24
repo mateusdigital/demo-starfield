@@ -18,9 +18,7 @@
 //----------------------------------------------------------------------------//
 // Constants                                                                  //
 //----------------------------------------------------------------------------//
-const STARFIELD_VERSION_MAJOR = 1;
-const STARFIELD_VERSION_MINOR = 0;
-const STARFIELD_VERSION_BABY  = 0;
+const STARFIELD_VERSION = "1.0.1";
 
 //----------------------------------------------------------------------------//
 // Public Functions                                                           //
@@ -28,9 +26,5 @@ const STARFIELD_VERSION_BABY  = 0;
 //------------------------------------------------------------------------------
 function GetVersion()
 {
-    return String_Cat(
-        STARFIELD_VERSION_MAJOR, ".",
-        STARFIELD_VERSION_MINOR, ".",
-        STARFIELD_VERSION_BABY
-    );
+    return STARFIELD_VERSION;
 }
