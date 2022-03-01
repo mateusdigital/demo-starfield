@@ -16,10 +16,11 @@
 //                                                                            //
 //---------------------------------------------------------------------------~//
 
+
 //----------------------------------------------------------------------------//
 // Constants                                                                  //
 //----------------------------------------------------------------------------//
-const STARS_COUNT     =  100;
+const STARS_COUNT     =   1000;
 const STAR_MIN_SIZE   =    0;
 const STAR_MAX_SIZE   =    4;
 const STAR_MIN_SPEED  =   50;
@@ -31,10 +32,6 @@ const TRAIL_MAX_ALPHA =  0.5;
 
 let COLOR = chroma("white");
 
-
-//----------------------------------------------------------------------------//
-// Types                                                                      //
-//----------------------------------------------------------------------------//
 class Star
 {
     constructor()
@@ -45,59 +42,76 @@ class Star
     _reset()
     {
         const GAP = 50;
-        this.startPos = Vector_Create(
-            Random_Int(Canvas_Edge_Left + GAP,  Canvas_Edge_Right  - GAP),
-            Random_Int(Canvas_Edge_Top  + GAP,  Canvas_Edge_Bottom - GAP)
-        );
-        this.currPos = Vector_Copy(this.startPos);
 
-        let v = Vector_Sub(this.startPos, Vector_Create(0, 0));
+        const canvas_w = get_canvas_width ();
+        const canvas_h = get_canvas_height();
+
+        const left_side   = -(canvas_w * 0.5) + GAP;
+        const right_side  = +(canvas_w * 0.5) - GAP;
+        const top_side    = -(canvas_h * 0.5) + GAP;
+        const bottom_side = +(canvas_h * 0.5) - GAP;
+
+        const random_x = random_int(left_side, right_side);
+        const random_y = random_int(top_side,  bottom_side);
+
+        this.start_pos = make_vec2(random_x, random_y);
+        this.curr_pos  = make_vec2(random_x, random_y);
+
+        let v          = sub_vec2(this.start_pos, make_vec2());
         this.angle     = Math.atan2(v.y, v.x);
         this.distance  = 0;
-        this.direction = Vector_Unit(v);
+        this.direction = make_vec2_unit(v);
         this.speed     = STAR_MIN_SPEED;
         this.size      = 0;
 
-        this.trailSize  = 0;
-        this.trailAlpha = 0;
+        this.trail_size  = 0;
+        this.trail_alpha = 0;
+
+        this.speed_modifier = random_float(1, 2);
     }
 
     update(dt)
     {
-        this.distance = Vector_Distance(this.startPos, this.currPos);
-
-        this.speed = Math_Map(
+        this.distance = distance_vec2(this.start_pos, this.curr_pos);
+        this.speed    = map_values(
             this.distance,
             0,              max_distance,
             STAR_MIN_SPEED, STAR_MAX_SPEED
-        ) * speed_modifier;
+        ) * this.speed_modifier;
 
-        this.size = Math_Map(
+        this.size = map_values(
             this.speed,
             STAR_MIN_SPEED, STAR_MAX_SPEED,
             STAR_MIN_SIZE,  STAR_MAX_SIZE
         );
 
-        this.trailSize = Math_Map(
+        this.trail_size = map_values(
             this.speed,
             STAR_MIN_SPEED, STAR_MAX_SPEED,
             TRAIL_MIN_SIZE, TRAIL_MAX_SIZE
         );
 
-        this.trailAlpha = Math_Map(
-            this.trailSize,
+        this.trail_alpha = map_values(
+            this.trail_size,
             TRAIL_MIN_SIZE,  TRAIL_MAX_SIZE,
             TRAIL_MIN_ALPHA, TRAIL_MAX_ALPHA
         );
 
+        this.curr_pos.x += this.speed * Math.cos(this.angle) * dt;
+        this.curr_pos.y += this.speed * Math.sin(this.angle) * dt;
 
-        this.currPos.x += this.speed * Math_Cos(this.angle) * dt;
-        this.currPos.y += this.speed * Math_Sin(this.angle) * dt;
+        const canvas_w = get_canvas_width ();
+        const canvas_h = get_canvas_height();
 
-        if(this.currPos.x < Canvas_Edge_Left  ||
-           this.currPos.x > Canvas_Edge_Right ||
-           this.currPos.y < Canvas_Edge_Top   ||
-           this.currPos.y > Canvas_Edge_Bottom)
+        const left_side   = -(canvas_w * 0.5);
+        const right_side  = +(canvas_w * 0.5);
+        const top_side    = -(canvas_h * 0.5);
+        const bottom_side = +(canvas_h * 0.5);
+
+        if(this.curr_pos.x < left_side  ||
+           this.curr_pos.x > right_side ||
+           this.curr_pos.y < top_side   ||
+           this.curr_pos.y > bottom_side)
         {
             this._reset();
         }
@@ -105,99 +119,57 @@ class Star
 
     draw()
     {
-        Canvas_FillCircle(this.currPos.x, this.currPos.y, this.size);
+        const v = sub_vec2(this.curr_pos, mul_vec2(this.direction, this.trail_size));
+        fill_circle(this.curr_pos.x, this.curr_pos.y, this.size);
 
-        Canvas_SetStrokeStyle(COLOR.alpha(this.trailAlpha));
-        let v = Vector_Sub(this.currPos, Vector_Mul(this.direction, this.trailSize));
-        Canvas_DrawLine(this.currPos.x, this.currPos.y, v.x, v.y);
+        set_canvas_stroke(COLOR.alpha(this.trail_alpha));
+        draw_line(this.curr_pos.x, this.curr_pos.y, v.x, v.y);
     }
-}; // class Star
+};
 
 
 //----------------------------------------------------------------------------//
 // Variables                                                                  //
 //----------------------------------------------------------------------------//
 let stars               = [];
-let speed_modifier      = 0;
 let time_to_create_star = 0;
 let max_distance        = 0;
+
 
 //----------------------------------------------------------------------------//
 // Setup / Draw                                                               //
 //----------------------------------------------------------------------------//
 //------------------------------------------------------------------------------
-function Setup()
+function demo_start(canvas)
 {
-    Random_Seed(null);
+    max_distance = Math.max(canvas.width, canvas.height);
 
-    //
-    // Configure the Canvas.
-    const parent        = document.getElementById("canvas_div");
-    const parent_width  = parent.clientWidth;
-    const parent_height = parent.clientHeight;
+    set_main_canvas(canvas);
+    set_canvas_fill("white");
 
-    const max_side = Math_Max(parent_width, parent_height);
-    const min_side = Math_Min(parent_width, parent_height);
+    set_random_seed       (null);
+    install_input_handlers(canvas);
 
-    const ratio = min_side / max_side;
-
-    // Landscape
-    if(parent_width > parent_height) {
-        Canvas_CreateCanvas(800, 800 * ratio, parent);
-    }
-    // Portrait
-    else {
-        Canvas_CreateCanvas(800 * ratio, 800, parent);
-    }
-
-    Canvas.style.width  = "100%";
-    Canvas.style.height = "100%";
-
-    //
-    // Add the information.
-    const info = document.createElement("p");
-    info.innerHTML = String_Cat(
-        "Starfield",    "<br>",
-        "Mar 12, 2019", "<br>",
-        GetVersion(),   "<br>",
-        "Move your mouse closer to the edge to increase speed", "<br>",
-        "<a href=\"http://stdmatt.com/demos/starfield.html\">More info</a>"
-    );
-    parent.appendChild(info);
-
-    //
-    // Start th simulation...
-    max_distance = max_side;
-    Input_InstallBasicMouseHandler(Canvas);
-    Canvas_Start();
+    start_draw_loop(draw);
 }
 
 //------------------------------------------------------------------------------
-function Draw(dt)
+function draw(dt)
 {
-    Canvas_ClearWindow();
-    Canvas_SetFillStyle("white");
-
-    const mouse_distance = Math_Distance(Mouse_X, Mouse_Y, 0, 0);
-    speed_modifier       = Math_Map(mouse_distance, 0, max_distance, 1.2, 2.5);
-
-
     if(stars.length < STARS_COUNT) {
         time_to_create_star -= dt;
         if(time_to_create_star < 0) {
-            time_to_create_star = Random_Number(0, 0.1);
+            time_to_create_star = random_float(0, 0.1);
             stars.push(new Star());
         }
     }
 
-    for(let i = 0; i < stars.length; ++i) {
-        stars[i].update(dt);
-        stars[i].draw();
-    }
+    clear_canvas();
+    begin_draw();
+        translate_canvas_to_center();
+        for(let i = 0; i < stars.length; ++i) {
+            stars[i].update(dt);
+            stars[i].draw   ();
+        }
+    end_draw();
 }
-
-
-//----------------------------------------------------------------------------//
-// Entry Point                                                                //
-//----------------------------------------------------------------------------//
-Setup();
