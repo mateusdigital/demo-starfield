@@ -20,7 +20,7 @@
 //----------------------------------------------------------------------------//
 // Constants                                                                  //
 //----------------------------------------------------------------------------//
-const STARS_COUNT     =   1000;
+const STARS_COUNT     =   100;
 const STAR_MIN_SIZE   =    0;
 const STAR_MAX_SIZE   =    4;
 const STAR_MIN_SPEED  =   50;
@@ -150,23 +150,20 @@ function demo_start(canvas)
     set_random_seed       (null);
     install_input_handlers(canvas);
 
+    for(let i = 0; i < STARS_COUNT; ++i) {
+        stars.push(new Star());
+    }
+
+    translate_canvas_to_center();
     start_draw_loop(draw);
 }
 
 //------------------------------------------------------------------------------
 function draw(dt)
 {
-    if(stars.length < STARS_COUNT) {
-        time_to_create_star -= dt;
-        if(time_to_create_star < 0) {
-            time_to_create_star = random_float(0, 0.1);
-            stars.push(new Star());
-        }
-    }
-
     clear_canvas();
+
     begin_draw();
-        translate_canvas_to_center();
         for(let i = 0; i < stars.length; ++i) {
             stars[i].update(dt);
             stars[i].draw   ();
