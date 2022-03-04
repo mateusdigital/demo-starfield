@@ -20,6 +20,13 @@
 //----------------------------------------------------------------------------//
 // Constants                                                                  //
 //----------------------------------------------------------------------------//
+//------------------------------------------------------------------------------
+__SOURCES = [
+    "/modules/demolib/modules/external/chroma.js",
+    "/modules/demolib/source/demolib.js",
+]
+
+//------------------------------------------------------------------------------
 const STARS_COUNT     =   100;
 const STAR_MIN_SIZE   =    0;
 const STAR_MAX_SIZE   =    4;
@@ -30,8 +37,11 @@ const TRAIL_MAX_SIZE  =   30;
 const TRAIL_MIN_ALPHA =    0;
 const TRAIL_MAX_ALPHA =  0.5;
 
-let COLOR = chroma("white");
 
+//----------------------------------------------------------------------------//
+// Types                                                                      //
+//----------------------------------------------------------------------------//
+//------------------------------------------------------------------------------
 class Star
 {
     constructor()
@@ -122,6 +132,7 @@ class Star
         const v = sub_vec2(this.curr_pos, mul_vec2(this.direction, this.trail_size));
         fill_circle(this.curr_pos.x, this.curr_pos.y, this.size);
 
+        // @perf(stdmatt): [Using chroma just to change the alpha... at 2022-03-04, 14:41
         set_canvas_stroke(COLOR.alpha(this.trail_alpha));
         draw_line(this.curr_pos.x, this.curr_pos.y, v.x, v.y);
     }
@@ -131,17 +142,40 @@ class Star
 //----------------------------------------------------------------------------//
 // Variables                                                                  //
 //----------------------------------------------------------------------------//
-let stars               = [];
-let time_to_create_star = 0;
-let max_distance        = 0;
-
+//------------------------------------------------------------------------------
+let stars        = [];
+let COLOR        = null;
+let max_distance = 0;
+let canvas       = null;
 
 //----------------------------------------------------------------------------//
 // Setup / Draw                                                               //
 //----------------------------------------------------------------------------//
 //------------------------------------------------------------------------------
-function demo_start(canvas)
+function setup_demo_mode()
 {
+    return new Promise((resolve, reject)=>{
+        demolib_load_all_scripts(__SOURCES).then(()=> {
+            canvas = document.createElement("canvas");
+
+            canvas.width            = window.innerWidth;
+            canvas.height           = window.innerHeight;
+            canvas.style.position   = "fixed";
+            canvas.style.left       = "0px";
+            canvas.style.top        = "0px";
+            canvas.style.zIndex     = "-100";
+
+            document.body.appendChild(canvas);
+
+            resolve();
+        });
+    });
+}
+
+//------------------------------------------------------------------------------
+function setup_common()
+{
+    COLOR = chroma("white")
     max_distance = Math.max(canvas.width, canvas.height);
 
     set_main_canvas(canvas);
@@ -156,6 +190,17 @@ function demo_start(canvas)
 
     translate_canvas_to_center();
     start_draw_loop(draw);
+}
+
+//------------------------------------------------------------------------------
+function demo_start(user_canvas)
+{
+    if(!user_canvas) {
+        setup_demo_mode().then(()=>{ setup_common(); });
+    } else {
+        canvas = user_canvas;
+        setup_common();
+    }
 }
 
 //------------------------------------------------------------------------------
