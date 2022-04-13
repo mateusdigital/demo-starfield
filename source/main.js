@@ -5,7 +5,7 @@
 //                   \__ \ || (_| | | | | | | (_| | |_| |_                    //
 //                   |___/\__\__,_|_| |_| |_|\__,_|\__|\__|                   //
 //                                                                            //
-//  File      : Starfield.js                                                  //
+//  File      : starfield.js                                                  //
 //  Project   : starfield                                                     //
 //  Date      : Aug 25, 2019                                                  //
 //  License   : GPLv3                                                         //
@@ -36,7 +36,6 @@ const TRAIL_MIN_SIZE  =    0;
 const TRAIL_MAX_SIZE  =   30;
 const TRAIL_MIN_ALPHA =    0;
 const TRAIL_MAX_ALPHA =  0.5;
-
 
 //----------------------------------------------------------------------------//
 // Types                                                                      //
