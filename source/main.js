@@ -10,7 +10,7 @@
 //  Date      : Aug 25, 2019                                                  //
 //  License   : GPLv3                                                         //
 //  Author    : stdmatt <stdmatt@pixelwizards.io>                             //
-//  Copyright : stdmatt 2019, 2020                                            //
+//  Copyright : stdmatt 2019, 2020, 2023                                      //
 //                                                                            //
 //  Description :                                                             //
 //                                                                            //
@@ -23,11 +23,13 @@
 //------------------------------------------------------------------------------
 __SOURCES = [
     "/modules/demolib/modules/external/chroma.js",
+    "/modules/demolib/modules/external/gif.js/gif.js",
+
     "/modules/demolib/source/demolib.js",
-]
+];
 
 //------------------------------------------------------------------------------
-const STARS_COUNT     =   100;
+const STARS_COUNT     =  100;
 const STAR_MIN_SIZE   =    0;
 const STAR_MAX_SIZE   =    4;
 const STAR_MIN_SPEED  =   50;
@@ -36,6 +38,7 @@ const TRAIL_MIN_SIZE  =    0;
 const TRAIL_MAX_SIZE  =   30;
 const TRAIL_MIN_ALPHA =    0;
 const TRAIL_MAX_ALPHA =  0.5;
+
 
 //----------------------------------------------------------------------------//
 // Types                                                                      //
@@ -151,10 +154,11 @@ let canvas       = null;
 // Setup / Draw                                                               //
 //----------------------------------------------------------------------------//
 //------------------------------------------------------------------------------
-function setup_demo_mode()
+function setup_standalone_mode()
 {
     return new Promise((resolve, reject)=>{
-        demolib_load_all_scripts(__SOURCES).then(()=> {
+        demolib_load_all_scripts(__SOURCES).then(()=> { // Download all needed scripts.
+            // Create the standalone canvas.
             canvas = document.createElement("canvas");
 
             canvas.width            = window.innerWidth;
@@ -165,6 +169,9 @@ function setup_demo_mode()
             canvas.style.zIndex     = "-100";
 
             document.body.appendChild(canvas);
+
+            // Setup the listener for gif recording.
+            gif_setup_listeners();
 
             resolve();
         });
@@ -191,15 +198,20 @@ function setup_common()
     start_draw_loop(draw);
 }
 
+
+
 //------------------------------------------------------------------------------
 function demo_start(user_canvas)
 {
     if(!user_canvas) {
-        setup_demo_mode().then(()=>{ setup_common(); });
+        setup_standalone_mode().then(()=>{
+            setup_common();
+        });
     } else {
         canvas = user_canvas;
         setup_common();
     }
+
 }
 
 //------------------------------------------------------------------------------
