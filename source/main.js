@@ -148,7 +148,7 @@ class Star
 let stars        = [];
 let COLOR        = null;
 let max_distance = 0;
-let canvas       = null;
+
 
 //----------------------------------------------------------------------------//
 // Setup / Draw                                                               //
@@ -159,7 +159,7 @@ function setup_standalone_mode()
     return new Promise((resolve, reject)=>{
         demolib_load_all_scripts(__SOURCES).then(()=> { // Download all needed scripts.
             // Create the standalone canvas.
-            canvas = document.createElement("canvas");
+            const canvas = document.createElement("canvas");
 
             canvas.width            = window.innerWidth;
             canvas.height           = window.innerHeight;
@@ -173,13 +173,13 @@ function setup_standalone_mode()
             // Setup the listener for gif recording.
             gif_setup_listeners();
 
-            resolve();
+            resolve(canvas);
         });
     });
 }
 
 //------------------------------------------------------------------------------
-function setup_common()
+function setup_common(canvas)
 {
     COLOR = chroma("white")
     max_distance = Math.max(canvas.width, canvas.height);
@@ -201,11 +201,11 @@ function setup_common()
 
 
 //------------------------------------------------------------------------------
-function demo_start(user_canvas)
+function demo_main(user_canvas)
 {
     if(!user_canvas) {
-        setup_standalone_mode().then(()=>{
-            setup_common();
+        setup_standalone_mode().then((canvas)=>{
+            setup_common(canvas);
         });
     } else {
         canvas = user_canvas;
